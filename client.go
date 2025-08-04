@@ -334,6 +334,17 @@ func (c *Client) handleErrorResp(resp *http.Response) error {
 		return singleErrRes.Error
 	}
 
+	// 尝试将响应体反序列化为 ErrorResponse 数组
+	var errResArray []ErrorResponse
+	err = json.Unmarshal(body, &errResArray)
+	if err == nil && len(errResArray) > 0 {
+		// 如果反序列化成功且数组不为空
+		firstErrRes := errResArray[0]
+		firstErrRes.Error.HTTPStatus = resp.Status
+		firstErrRes.Error.HTTPStatusCode = resp.StatusCode
+		return firstErrRes.Error
+	}
+
 	//errRes.Error.HTTPStatus = resp.Status
 	//errRes.Error.HTTPStatusCode = resp.StatusCode
 	//return errRes.Error
