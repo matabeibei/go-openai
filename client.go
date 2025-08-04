@@ -311,24 +311,41 @@ func (c *Client) handleErrorResp(resp *http.Response) error {
 	if err != nil {
 		return fmt.Errorf("error, reading response body: %w", err)
 	}
-	var errRes ErrorResponse
-	err = json.Unmarshal(body, &errRes)
-	if err != nil || errRes.Error == nil {
-		reqErr := &RequestError{
-			HTTPStatus:     resp.Status,
-			HTTPStatusCode: resp.StatusCode,
-			Err:            err,
-			Body:           body,
-		}
-		if errRes.Error != nil {
-			reqErr.Err = errRes.Error
-		}
-		return reqErr
+
+	// 尝试将响应体反序列化为单个 ErrorResponse
+	var singleErrRes ErrorResponse
+	err = json.Unmarshal(body, &singleErrRes)
+	//if err != nil || errRes.Error == nil {
+	//	reqErr := &RequestError{
+	//		HTTPStatus:     resp.Status,
+	//		HTTPStatusCode: resp.StatusCode,
+	//		Err:            err,
+	//		Body:           body,
+	//	}
+	//	if errRes.Error != nil {
+	//		reqErr.Err = errRes.Error
+	//	}
+	//	return reqErr
+	//}
+	if err == nil && singleErrRes.Error != nil {
+		// 如果反序列化成功且 ErrorResponse 的 Error 字段不为空
+		singleErrRes.Error.HTTPStatus = resp.Status
+		singleErrRes.Error.HTTPStatusCode = resp.StatusCode
+		return singleErrRes.Error
 	}
 
-	errRes.Error.HTTPStatus = resp.Status
-	errRes.Error.HTTPStatusCode = resp.StatusCode
-	return errRes.Error
+	//errRes.Error.HTTPStatus = resp.Status
+	//errRes.Error.HTTPStatusCode = resp.StatusCode
+	//return errRes.Error
+
+	// 如果以上两种尝试都失败，则使用兜底逻辑
+	reqErr := &RequestError{
+		HTTPStatus:     resp.Status,
+		HTTPStatusCode: resp.StatusCode,
+		Err:            fmt.Errorf("failed to unmarshal response body to ErrorResponse or ErrorResponse array"),
+		Body:           body,
+	}
+	return reqErr
 }
 
 func containsSubstr(s []string, e string) bool {
