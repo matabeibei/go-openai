@@ -83,6 +83,7 @@ type ImageRequest struct {
 	Moderation        string `json:"moderation,omitempty"`
 	OutputCompression int    `json:"output_compression,omitempty"`
 	OutputFormat      string `json:"output_format,omitempty"`
+	Watermark         *bool  `json:"watermark,omitempty"`
 }
 
 // ImageResponse represents a response structure for image API.
